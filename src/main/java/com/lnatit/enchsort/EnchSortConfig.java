@@ -22,7 +22,7 @@ public class EnchSortConfig
     public static ForgeConfigSpec.BooleanValue SORT_BY_LEVEL;
     public static ForgeConfigSpec.ConfigValue<List<String>> SORT_SEQUENCE;
     public static ForgeConfigSpec.BooleanValue INDEPENDENT_TREASURE;
-    public static ForgeConfigSpec.BooleanValue TREASURE_ON_TOP;
+    public static ForgeConfigSpec.BooleanValue REVERSE_TREASURE;
     public static ForgeConfigSpec.BooleanValue ALSO_SORT_BOOK;
     public static ForgeConfigSpec.BooleanValue ASCENDING_SORT;
     public static ForgeConfigSpec.BooleanValue SHOW_MAX_LEVEL;
@@ -72,11 +72,11 @@ public class EnchSortConfig
 
         // DONE
         BUILDER.push("IndieTreasure");
-        TREASURE_ON_TOP = BUILDER
-                .comment(" Whether to sort the treasure on top",
+        REVERSE_TREASURE = BUILDER
+                .comment(" Whether to sort the treasure on reverse side",
                          " default: false"
                 )
-                .define("treasureOnTop", false);
+                .define("reverseTreasure", false);
         BUILDER.pop();
 
         // DONE
@@ -161,11 +161,12 @@ public class EnchSortConfig
 
     public static void parseConfig()
     {
-        int index;
+        int size, index;
         List<String> sequence = SORT_SEQUENCE.get();
+        size = sequence.size();
 
-        for (index = 0; index < sequence.size(); index++)
-            ENCH_RANK.put(sequence.get(index), index);
+        for (index = 0; index < size; index++)
+            ENCH_RANK.put(sequence.get(index), size - index);
 
         if (ENCH_RANK.size() == index)
             LOGGER.info("Parsed " + index + " enchantments successful!");
@@ -260,7 +261,7 @@ public class EnchSortConfig
             if (INDEPENDENT_TREASURE.get())
             {
                 int treasureModify = maxEnchLvl * enchCount;
-                if (TREASURE_ON_TOP.get())
+                if (REVERSE_TREASURE.get())
                     treasureModify = -treasureModify;
 
                 if (o1.getKey().isTreasureOnly())
