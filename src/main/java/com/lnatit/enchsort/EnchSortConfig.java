@@ -124,7 +124,7 @@ public class EnchSortConfig
                 .comment(" The format list of treasure enchantments",
                          " Use Formatting code or RGB format (#xxxxxx)"
                 )
-                .define("maxLevelFormat", DEFAULT_FORMAT);
+                .define("treasureFormat", DEFAULT_FORMAT);
         BUILDER.pop();
 
         BUILDER.pop();
