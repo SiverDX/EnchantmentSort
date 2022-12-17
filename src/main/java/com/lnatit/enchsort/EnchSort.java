@@ -58,6 +58,7 @@ public class EnchSort
         final ItemStack stack = event.getItemStack();
 
         boolean forSort = stack.isEnchanted() || (EnchSortConfig.ALSO_SORT_BOOK.get() && stack.getItem() instanceof EnchantedBookItem);
+        forSort = forSort || (getHideFlags(stack) & ItemStack.TooltipPart.ENCHANTMENTS.getMask()) == 0;
         if (!forSort || event.getEntity() == null)
             return;
 
@@ -87,6 +88,11 @@ public class EnchSort
                     break;
             }
         }
+        if (index + enchs.size() > toolTip.size())
+        {
+            LOGGER.warn("Some tooltip lines are missing!!!");
+            return;
+        }
         toolTip.subList(index, index + enchs.size()).clear();
 
         // Sort the enchMap & generate toolTip
@@ -95,5 +101,9 @@ public class EnchSort
         enchArray.sort(EnchSortConfig.EnchComparator.getInstance());
         for (Map.Entry<Enchantment, Integer> entry : enchArray)
             toolTip.add(index++, EnchSortConfig.getFullEnchLine(entry));
+    }
+
+    private static int getHideFlags(ItemStack stack) {
+        return stack.hasTag() && stack.getTag().contains("HideFlags", 99) ? stack.getTag().getInt("HideFlags") : stack.getItem().getDefaultTooltipHideFlags(stack);
     }
 }
