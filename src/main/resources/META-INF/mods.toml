@@ -29,7 +29,7 @@ displayName="Enchantment Sort" #mandatory
 # A file name (in the root of the mod JAR) containing a logo for display
 logoFile="logo.png" #optional
 # A text field displayed in the mod UI
-credits="Thanks for all the Minecraft & Forge contributors." #optional
+credits="Thanks for all the Minecraft & Forge contributors. Thx for ThankuMaker for logo design." #optional
 # A text field displayed in the mod UI
 authors="Locus_Natit" #optional
 # Display Test controls the display for your mod in the server connection screen
@@ -43,9 +43,7 @@ authors="Locus_Natit" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description='''
 This is a lightweight mod which helps you sort the enchantments on items' tooltip.
-
 Moreover, some misc fuctions related are provided.
-
 You can configure all the functions at your want.
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
