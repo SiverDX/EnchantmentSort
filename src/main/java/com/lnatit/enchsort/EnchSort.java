@@ -72,11 +72,6 @@ public class EnchSort
 
         List<Component> toolTip = event.getToolTip();
 
-        if (Screen.hasShiftDown())
-        {
-            LOGGER.debug(toolTip.toString());
-        }
-
         if (COMPATIBLE_MODE.get())
             EnchSortRule.sortCompatible(toolTip, stack);
         else EnchSortRule.sortDefault(toolTip, stack);
