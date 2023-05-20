@@ -4,12 +4,14 @@ plugins {
     id 'net.minecraftforge.gradle' version '5.1.+'
 }
 
-version = '1.1.3'
+version = minecraft_version + '-' + mod_version
 group = 'com.lnatit.enchsort'
-archivesBaseName = 'enchsort'
+archivesBaseName = mod_id
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+jarJar.enable()
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
@@ -118,7 +120,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
-
+    mavenCentral()
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so:
     // flatDir {
     //     dir 'libs'
@@ -142,6 +144,14 @@ dependencies {
     // For more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
+
+    // Toml Config Parse
+   minecraftLibrary 'com.moandjiezana.toml:toml4j:0.7.2', {
+       exclude module: 'gson'
+   }
+
+    //DONE enable jarJar for build
+    jarJar(group: 'com.moandjiezana.toml', name: 'toml4j', version: '[0.7,0.8)')
 }
 
 // Example for how to get properties into the manifest for reading at runtime.
@@ -152,7 +162,7 @@ jar {
                 "Specification-Vendor"    : "Locus_Natit",
                 "Specification-Version"   : "1", // We are version 1 of ourselves
                 "Implementation-Title"    : project.name,
-                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Version"  : "${version}",
                 "Implementation-Vendor"   : "Locus_Natit",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
