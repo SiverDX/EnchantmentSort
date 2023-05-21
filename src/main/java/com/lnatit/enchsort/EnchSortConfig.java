@@ -182,19 +182,19 @@ public class EnchSortConfig
 
         if (enchantment.isCurse())
             mutablecomponent.withStyle(RED);
-        else if (HIGHLIGHT_TREASURE.get() && enchantment.isTreasureOnly())
+        else if (HIGHLIGHT_TREASURE.get() && EnchSortRule.isTreasure(enchantment))
             mutablecomponent.withStyle(TREASURE);
         else
             mutablecomponent.withStyle(GRAY);
 
-        if (level != 1 || enchantment.getMaxLevel() != 1)
+        if (level != 1 || EnchSortRule.getMaxLevel(enchantment) != 1)
         {
             mutablecomponent.append(" ").append(Component.translatable("enchantment.level." + level));
             if (SHOW_MAX_LEVEL.get())
             {
                 Component maxLvl = Component
                         .literal("/")
-                        .append(Component.translatable("enchantment.level." + enchantment.getMaxLevel()))
+                        .append(Component.translatable("enchantment.level." + EnchSortRule.getMaxLevel(enchantment)))
                         .setStyle(MAX_LEVEL);
                 mutablecomponent.append(maxLvl);
             }
