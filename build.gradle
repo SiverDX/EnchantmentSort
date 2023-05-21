@@ -162,7 +162,7 @@ jar {
                 "Specification-Vendor"    : "Locus_Natit",
                 "Specification-Version"   : "1", // We are version 1 of ourselves
                 "Implementation-Title"    : project.name,
-                "Implementation-Version"  : "${mod_version}",
+                "Implementation-Version"  : "${version}",
                 "Implementation-Vendor"   : "Locus_Natit",
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])

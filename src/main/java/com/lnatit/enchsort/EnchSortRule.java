@@ -38,8 +38,8 @@ public class EnchSortRule
         } catch (Throwable exception) {
             EnchSort.LOGGER.debug("Apotheosis Support not loaded.\n" + exception);
 
-            maxLevelMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6586");
-            treasureOnlyMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6591");
+            maxLevelMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6586_");
+            treasureOnlyMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6591_");
         }
 
         try {
