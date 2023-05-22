@@ -333,7 +333,7 @@ public class EnchSortRule
 
                 if (isTreasure(o1.getKey()))
                     ret -= treasureModify;
-                if (isTreasure(o1.getKey()))
+                if (isTreasure(o2.getKey()))
                     ret += treasureModify;
             }
 
