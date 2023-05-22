@@ -3,6 +3,7 @@ package com.lnatit.enchsort;
 import com.moandjiezana.toml.Toml;
 import com.moandjiezana.toml.TomlWriter;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -21,37 +22,11 @@ import java.util.*;
 
 import static com.lnatit.enchsort.EnchSort.LOGGER;
 import static com.lnatit.enchsort.EnchSort.MOD_ID;
+import static net.minecraft.ChatFormatting.GRAY;
+import static net.minecraft.ChatFormatting.RED;
 
 public class EnchSortRule
 {
-    private static final MethodHandle getMaxLevel;
-    private static final MethodHandle isTreasureOnly;
-
-    static {
-        Method maxLevelMethod;
-        Method treasureOnlyMethod;
-
-        try {
-            Class<?> EnchHooks = Class.forName("shadows.apotheosis.ench.asm.EnchHooks");
-            maxLevelMethod = EnchHooks.getMethod("getMaxLevel", Enchantment.class);
-            treasureOnlyMethod = EnchHooks.getMethod("isTreasureOnly", Enchantment.class);
-        } catch (Throwable exception) {
-            EnchSort.LOGGER.debug("Apotheosis Support not loaded.\n" + exception);
-
-            maxLevelMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6586_");
-            treasureOnlyMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6591_");
-        }
-
-        try {
-            maxLevelMethod.setAccessible(true);
-            treasureOnlyMethod.setAccessible(true);
-            getMaxLevel = MethodHandles.lookup().unreflect(maxLevelMethod);
-            isTreasureOnly = MethodHandles.lookup().unreflect(treasureOnlyMethod);
-        } catch (IllegalAccessException exception) {
-            throw new RuntimeException("Failed to access Enchantment#getMaxLevel / Enchantment#isTreasureOnly!");
-        }
-    }
-
     private static File RULE_FILE;
     private static Toml RULE_TOML;
 
@@ -59,6 +34,41 @@ public class EnchSortRule
     private static final String LIST_KEY = "entries";
     private static final EnchProperty DEFAULT_PROP = new EnchProperty();
     private static final HashMap<String, EnchProperty> ENCH_RANK = new HashMap<>();
+
+    private static final MethodHandle getMaxLevel;
+    private static final MethodHandle isTreasureOnly;
+
+    static
+    {
+        Method maxLevelMethod;
+        Method treasureOnlyMethod;
+
+        try
+        {
+            Class<?> EnchHooks = Class.forName("shadows.apotheosis.ench.asm.EnchHooks");
+            maxLevelMethod = EnchHooks.getMethod("getMaxLevel", Enchantment.class);
+            treasureOnlyMethod = EnchHooks.getMethod("isTreasureOnly", Enchantment.class);
+        }
+        catch (Throwable exception)
+        {
+            EnchSort.LOGGER.debug("Apotheosis Support not loaded.\n" + exception);
+
+            maxLevelMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6586_");
+            treasureOnlyMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6591_");
+        }
+
+        try
+        {
+            maxLevelMethod.setAccessible(true);
+            treasureOnlyMethod.setAccessible(true);
+            getMaxLevel = MethodHandles.lookup().unreflect(maxLevelMethod);
+            isTreasureOnly = MethodHandles.lookup().unreflect(treasureOnlyMethod);
+        }
+        catch (IllegalAccessException exception)
+        {
+            throw new RuntimeException("Failed to access Enchantment#getMaxLevel / Enchantment#isTreasureOnly!");
+        }
+    }
 
     public static void initRule()
     {
@@ -147,7 +157,7 @@ public class EnchSortRule
 
         enchArray.sort(EnchSortRule.EnchComparator.getInstance());
         for (Map.Entry<Enchantment, Integer> entry : enchArray)
-            toolTip.add(index++, EnchSortConfig.getFullEnchLine(entry));
+            toolTip.add(index++, getFullEnchLine(entry));
     }
 
     public static void sortCompatible(List<Component> toolTip, ItemStack stack)
@@ -238,6 +248,75 @@ public class EnchSortRule
     public static EnchProperty getPropById(String id)
     {
         return ENCH_RANK.getOrDefault(id, DEFAULT_PROP);
+    }
+
+    public static Component getFullEnchLine(Map.Entry<Enchantment, Integer> entry)
+    {
+        Enchantment enchantment = entry.getKey();
+        int level = entry.getValue();
+        MutableComponent mutablecomponent = Component.translatable(enchantment.getDescriptionId());
+
+        if (enchantment.isCurse())
+            mutablecomponent.withStyle(RED);
+        else if (EnchSortConfig.HIGHLIGHT_TREASURE.get() && isTreasure(enchantment))
+            mutablecomponent.withStyle(EnchSortConfig.TREASURE);
+        else
+            mutablecomponent.withStyle(GRAY);
+
+        ResourceLocation rl = EnchantmentHelper.getEnchantmentId(enchantment);
+        if (rl == null)
+        {
+            LOGGER.error("Failed to get enchantment: " + enchantment.getDescriptionId() + "!!!");
+            return mutablecomponent;
+        }
+        int maxLevel = Math.max(getMaxLevel(enchantment), getPropById(rl.toString()).getMaxLevel());
+
+        if (level != 1 || maxLevel != 1)
+        {
+            mutablecomponent.append(" ").append(Component.translatable("enchantment.level." + level));
+            if (EnchSortConfig.SHOW_MAX_LEVEL.get())
+            {
+                Component maxLvl = Component
+                        .literal("/")
+                        .append(Component.translatable("enchantment.level." + maxLevel))
+                        .setStyle(EnchSortConfig.MAX_LEVEL);
+                mutablecomponent.append(maxLvl);
+            }
+        }
+
+        return mutablecomponent;
+    }
+
+    public static boolean isTreasure(final Enchantment enchantment)
+    {
+        boolean isTreasure;
+
+        try
+        {
+            isTreasure = (Boolean) isTreasureOnly.invoke(enchantment);
+        }
+        catch (Throwable e)
+        {
+            isTreasure = enchantment.isTreasureOnly();
+        }
+
+        return isTreasure;
+    }
+
+    public static int getMaxLevel(final Enchantment enchantment)
+    {
+        int maxLevel;
+
+        try
+        {
+            maxLevel = (Integer) getMaxLevel.invoke(enchantment);
+        }
+        catch (Throwable e)
+        {
+            maxLevel = enchantment.getMaxLevel();
+        }
+
+        return maxLevel;
     }
 
     protected static class EnchProperty
@@ -339,29 +418,5 @@ public class EnchSortRule
 
             return ret;
         }
-    }
-
-    public static boolean isTreasure(final Enchantment enchantment) {
-        boolean isTreasure;
-
-        try {
-            isTreasure = (Boolean) isTreasureOnly.invoke(enchantment);
-        } catch (Throwable e) {
-            isTreasure = enchantment.isTreasureOnly();
-        }
-
-        return isTreasure;
-    }
-
-    public static int getMaxLevel(final Enchantment enchantment) {
-        int maxLevel;
-
-        try {
-            maxLevel = (Integer) getMaxLevel.invoke(enchantment);
-        } catch (Throwable e) {
-            maxLevel = enchantment.getMaxLevel();
-        }
-
-        return maxLevel;
     }
 }
