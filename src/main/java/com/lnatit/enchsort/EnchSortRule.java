@@ -9,10 +9,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static com.lnatit.enchsort.EnchSort.LOGGER;
@@ -20,6 +24,34 @@ import static com.lnatit.enchsort.EnchSort.MOD_ID;
 
 public class EnchSortRule
 {
+    private static final MethodHandle getMaxLevel;
+    private static final MethodHandle isTreasureOnly;
+
+    static {
+        Method maxLevelMethod;
+        Method treasureOnlyMethod;
+
+        try {
+            Class<?> EnchHooks = Class.forName("shadows.apotheosis.ench.asm.EnchHooks");
+            maxLevelMethod = EnchHooks.getMethod("getMaxLevel", Enchantment.class);
+            treasureOnlyMethod = EnchHooks.getMethod("isTreasureOnly", Enchantment.class);
+        } catch (Throwable exception) {
+            EnchSort.LOGGER.debug("Apotheosis Support not loaded.\n" + exception);
+
+            maxLevelMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6586_");
+            treasureOnlyMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6591_");
+        }
+
+        try {
+            maxLevelMethod.setAccessible(true);
+            treasureOnlyMethod.setAccessible(true);
+            getMaxLevel = MethodHandles.lookup().unreflect(maxLevelMethod);
+            isTreasureOnly = MethodHandles.lookup().unreflect(treasureOnlyMethod);
+        } catch (IllegalAccessException exception) {
+            throw new RuntimeException("Failed to access Enchantment#getMaxLevel / Enchantment#isTreasureOnly!");
+        }
+    }
+
     private static File RULE_FILE;
     private static Toml RULE_TOML;
 
@@ -192,7 +224,7 @@ public class EnchSortRule
                 continue;
             }
             elem.put(EnchProperty.NAME, rl.toString());
-            elem.put(EnchProperty.MAX_LVL, ench.getMaxLevel());
+            elem.put(EnchProperty.MAX_LVL, getMaxLevel(ench));
 
             entry.add(elem);
         }
@@ -267,11 +299,11 @@ public class EnchSortRule
                     LOGGER.error("Failed to get enchantment: " + ench.getDescriptionId() + "!!!");
                     continue;
                 }
-                int maxLevel = Math.max(ench.getMaxLevel(), getPropById(rl.toString()).getMaxLevel());
+                int maxLevel = Math.max(getMaxLevel(ench), getPropById(rl.toString()).getMaxLevel());
                 if (maxLevel > maxEnchLvl)
                     maxEnchLvl = maxLevel;
             }
-            LOGGER.info("Max enchantment level is " + maxEnchLvl + ".");
+            LOGGER.debug("Max enchantment level is " + maxEnchLvl + ".");
         }
 
         @Override
@@ -299,13 +331,37 @@ public class EnchSortRule
                 if (EnchSortConfig.REVERSE_TREASURE.get())
                     treasureModify = -treasureModify;
 
-                if (o1.getKey().isTreasureOnly())
+                if (isTreasure(o1.getKey()))
                     ret -= treasureModify;
-                if (o2.getKey().isTreasureOnly())
+                if (isTreasure(o2.getKey()))
                     ret += treasureModify;
             }
 
             return ret;
         }
+    }
+
+    public static boolean isTreasure(final Enchantment enchantment) {
+        boolean isTreasure;
+
+        try {
+            isTreasure = (Boolean) isTreasureOnly.invoke(enchantment);
+        } catch (Throwable e) {
+            isTreasure = enchantment.isTreasureOnly();
+        }
+
+        return isTreasure;
+    }
+
+    public static int getMaxLevel(final Enchantment enchantment) {
+        int maxLevel;
+
+        try {
+            maxLevel = (Integer) getMaxLevel.invoke(enchantment);
+        } catch (Throwable e) {
+            maxLevel = enchantment.getMaxLevel();
+        }
+
+        return maxLevel;
     }
 }
