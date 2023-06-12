@@ -29,7 +29,7 @@ displayName="Enchantment Sort" #mandatory
 # A file name (in the root of the mod JAR) containing a logo for display
 logoFile="logo.png" #optional
 # A text field displayed in the mod UI
-credits="Thanks for all the Minecraft & Forge contributors. Thx for ThankuMaker for logo design." #optional
+credits="Thanks for all the Minecraft & Forge contributors. Thx for ThankuMaker for logo design. Thanks for SiverDX for compatibility support. Thanks for all the issuers for bug reports." #optional
 # A text field displayed in the mod UI
 authors="Locus_Natit" #optional
 # Display Test controls the display for your mod in the server connection screen

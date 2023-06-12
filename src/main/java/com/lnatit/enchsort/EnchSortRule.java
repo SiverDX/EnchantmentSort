@@ -10,20 +10,17 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
 import java.util.*;
 
 import static com.lnatit.enchsort.EnchSort.LOGGER;
 import static com.lnatit.enchsort.EnchSort.MOD_ID;
 import static net.minecraft.ChatFormatting.GRAY;
 import static net.minecraft.ChatFormatting.RED;
+import static com.lnatit.enchsort.ApotheosisSupport.*;
 
 public class EnchSortRule
 {
@@ -34,41 +31,6 @@ public class EnchSortRule
     private static final String LIST_KEY = "entries";
     private static final EnchProperty DEFAULT_PROP = new EnchProperty();
     private static final HashMap<String, EnchProperty> ENCH_RANK = new HashMap<>();
-
-    private static final MethodHandle getMaxLevel;
-    private static final MethodHandle isTreasureOnly;
-
-    static
-    {
-        Method maxLevelMethod;
-        Method treasureOnlyMethod;
-
-        try
-        {
-            Class<?> EnchHooks = Class.forName("shadows.apotheosis.ench.asm.EnchHooks");
-            maxLevelMethod = EnchHooks.getMethod("getMaxLevel", Enchantment.class);
-            treasureOnlyMethod = EnchHooks.getMethod("isTreasureOnly", Enchantment.class);
-        }
-        catch (Throwable exception)
-        {
-            EnchSort.LOGGER.debug("Apotheosis Support not loaded.\n" + exception);
-
-            maxLevelMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6586_");
-            treasureOnlyMethod = ObfuscationReflectionHelper.findMethod(Enchantment.class, "m_6591_");
-        }
-
-        try
-        {
-            maxLevelMethod.setAccessible(true);
-            treasureOnlyMethod.setAccessible(true);
-            getMaxLevel = MethodHandles.lookup().unreflect(maxLevelMethod);
-            isTreasureOnly = MethodHandles.lookup().unreflect(treasureOnlyMethod);
-        }
-        catch (IllegalAccessException exception)
-        {
-            throw new RuntimeException("Failed to access Enchantment#getMaxLevel / Enchantment#isTreasureOnly!");
-        }
-    }
 
     public static void initRule()
     {
@@ -103,7 +65,7 @@ public class EnchSortRule
     {
         int size, index;
         List<Toml> tomlList = RULE_TOML.getTables(LIST_KEY);
-        size = tomlList.size();
+        size = tomlList == null ? 0 : tomlList.size();
 
         for (index = 0; index < size; index++)
         {
@@ -287,37 +249,7 @@ public class EnchSortRule
         return mutablecomponent;
     }
 
-    public static boolean isTreasure(final Enchantment enchantment)
-    {
-        boolean isTreasure;
 
-        try
-        {
-            isTreasure = (Boolean) isTreasureOnly.invoke(enchantment);
-        }
-        catch (Throwable e)
-        {
-            isTreasure = enchantment.isTreasureOnly();
-        }
-
-        return isTreasure;
-    }
-
-    public static int getMaxLevel(final Enchantment enchantment)
-    {
-        int maxLevel;
-
-        try
-        {
-            maxLevel = (Integer) getMaxLevel.invoke(enchantment);
-        }
-        catch (Throwable e)
-        {
-            maxLevel = enchantment.getMaxLevel();
-        }
-
-        return maxLevel;
-    }
 
     protected static class EnchProperty
     {
