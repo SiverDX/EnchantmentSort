@@ -22,7 +22,7 @@ public class ApotheosisSupport
 
         try
         {
-            Class<?> EnchHooks = Class.forName("shadows.apotheosis.ench.asm.EnchHooks");
+            Class<?> EnchHooks = Class.forName("dev.shadowsoffire.apotheosis.ench.asm.EnchHooks");
             maxLevelMethod = EnchHooks.getMethod("getMaxLevel", Enchantment.class);
             treasureOnlyMethod = EnchHooks.getMethod("isTreasureOnly", Enchantment.class);
         }
