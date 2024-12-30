@@ -16,7 +16,9 @@ import java.util.List;
 public class Utils {
     public static int getMaxLevel(final Enchantment enchantment) {
         if (EnchSort.APOTH_ENCHANTING) {
-            return EnchHooks.getMaxLevel(enchantment);
+            try {
+                return EnchHooks.getMaxLevel(enchantment);
+            } catch (UnsupportedOperationException ignored) { /* Why? */ }
         }
 
         return enchantment.getMaxLevel();

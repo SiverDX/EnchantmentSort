@@ -100,8 +100,8 @@ public class ClientConfig {
         BUILDER.push("MaxLevel");
         SHOW_MAX_LEVEL = BUILDER
                 .comment(" Show the max level of the enchantments",
-                        " default: false")
-                .define("show_max_level", false);
+                        " default: true")
+                .define("show_max_level", true);
 
         MAX_LEVEL_FORMAT = BUILDER
                 .comment(" The format list of the max level text",
