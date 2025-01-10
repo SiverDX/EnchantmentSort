@@ -11,20 +11,31 @@
   "enchsort.configuration.compatible_mode.tooltip": "Compatible mode (may cause performance losses)\nEnabling this config will disable [show_max_level] and [highlight_treasure]",
   "enchsort.configuration.handle_description": "Handle description",
   "enchsort.configuration.handle_description.tooltip": "Properly sort the tooltip if enchantment descriptions are present\n(Only needed if you notice issues)",
+
   "enchsort.configuration.Treasure": "Treasure enchantment",
   "enchsort.configuration.Treasure.tooltip": "Specific configurations for treasure enchantments",
   "enchsort.configuration.independent_treasure_sort": "Independent sorting",
   "enchsort.configuration.independent_treasure_sort.tooltip": "Sort the treasure enchantments independently",
   "enchsort.configuration.reverse_treasure_sort": "Reverse sorting",
   "enchsort.configuration.reverse_treasure_sort.tooltip": "Sort the treasure enchantments in reverse",
-  "enchsort.configuration.highlight_treasure": "Highlight",
-  "enchsort.configuration.highlight_treasure.tooltip": "Enable custom highlights for treasure enchantments",
-  "enchsort.configuration.treasure_format": "Format",
-  "enchsort.configuration.treasure_format.tooltip": "The format list of treasure enchantments\nUse Formatting code or RGB format (#xxxxxx)",
+  "enchsort.configuration.treasure_style": "Style",
+  "enchsort.configuration.treasure_style.tooltip": "The style to be used for treasure enchantments\nDefine the style data in the 'key:value,key:value' format",
+
+  "enchsort.configuration.Curse": "Curses",
+  "enchsort.configuration.Curse.tooltip": "Specific configuration for curses",
+  "enchsort.configuration.independent_curse_sort": "Independent sorting",
+  "enchsort.configuration.independent_curse_sort.tooltip": "Sort the curses independently",
+  "enchsort.configuration.reverse_curse_sort": "Reverse sorting",
+  "enchsort.configuration.reverse_curse_sort.tooltip": "Sort the curses in reverse",
+  "enchsort.configuration.curse_style": "Style",
+  "enchsort.configuration.curse_style.tooltip": "The style to be used for curses\nDefine the style data in the 'key:value,key:value' format",
+
   "enchsort.configuration.MaxLevel": "Max level",
   "enchsort.configuration.MaxLevel.tooltip": "Configurations regarding the enchantment max level",
   "enchsort.configuration.show_max_level": "Show max level",
   "enchsort.configuration.show_max_level.tooltip": "Show the max level of the enchantments",
-  "enchsort.configuration.max_level_format": "Format",
-  "enchsort.configuration.max_level_format.tooltip": "The format list of the max level text\nUse Formatting code or RGB format (#xxxxxx)"
+  "enchsort.configuration.max_level_style": "Max Level Style",
+  "enchsort.configuration.max_level_style.tooltip": "The style to be used for enchantments that reached max. level\nDefine the style data in the 'key:value,key:value' format",
+  "enchsort.configuration.max_level_info_style": "Max Level Info Style",
+  "enchsort.configuration.max_level_info_style.tooltip": "The style to be used for the max. level information part\nDefine the style data in the 'key:value,key:value' format"
 }

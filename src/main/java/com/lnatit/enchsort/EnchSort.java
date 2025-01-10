@@ -31,17 +31,16 @@ public class EnchSort {
     public EnchSort(final IEventBus bus, final ModContainer container) {
         bus.addListener(EventPriority.LOW, ClientConfig::parseConfig);
 
-        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, EnchSort::sortEnchantments);
-        NeoForge.EVENT_BUS.addListener(EnchSortRule::initializeRules);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, this::sortEnchantments);
 
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
 
-    private static void sortEnchantments(final ItemTooltipEvent event) {
+    private void sortEnchantments(final ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
 
-        if (event.getEntity() == null) {
+        if (event.getEntity() == null || event.getContext().registries() == null) {
             return;
         }
 
@@ -52,10 +51,6 @@ public class EnchSort {
         boolean isEnchantedBook = stack.getItem() instanceof EnchantedBookItem;
 
         if (!ClientConfig.SORT_BOOKS.get() && isEnchantedBook || !isEnchantedBook && !stack.isEnchanted()) {
-            return;
-        }
-
-        if (event.getContext().registries() == null) {
             return;
         }
 

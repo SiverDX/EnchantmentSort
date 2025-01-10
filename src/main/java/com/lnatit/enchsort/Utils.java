@@ -14,14 +14,22 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import java.util.List;
 
 public class Utils {
-    public static int getMaxLevel(final Enchantment enchantment) {
-        if (EnchSort.APOTH_ENCHANTING) {
-            try {
-                return EnchHooks.getMaxLevel(enchantment);
-            } catch (UnsupportedOperationException ignored) { /* Why? */ }
+    public static int getMaxLevel(final Holder<Enchantment> enchantment) {
+        TomlHandler.SequenceConfig config = TomlHandler.getConfig(enchantment.getRegisteredName());
+
+        if (config.hasCustomMaxLevel()) {
+            return config.getCustomMaxLevel();
         }
 
-        return enchantment.getMaxLevel();
+        if (EnchSort.APOTH_ENCHANTING) {
+            try {
+                return EnchHooks.getMaxLevel(enchantment.value());
+            } catch (UnsupportedOperationException ignored) {
+                // Can't do much here, logging the exception would just spam things
+            }
+        }
+
+        return enchantment.value().getMaxLevel();
     }
 
     public static boolean isTreasure(final Holder<Enchantment> enchantment) {

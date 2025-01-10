@@ -1,87 +1,21 @@
 package com.lnatit.enchsort;
 
-import com.moandjiezana.toml.Toml;
-import com.moandjiezana.toml.TomlWriter;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
-import static com.lnatit.enchsort.EnchSort.LOGGER;
-import static com.lnatit.enchsort.EnchSort.MOD_ID;
-import static net.minecraft.ChatFormatting.GRAY;
-import static net.minecraft.ChatFormatting.RED;
-
 public class EnchSortRule {
-    private static File RULE_FILE;
-    private static Toml RULE_TOML;
-
-    private static final String FILE_NAME = MOD_ID + "-rule.toml";
-    private static final String LIST_KEY = "entries";
-    private static final EnchProperty DEFAULT_PROP = new EnchProperty();
-    private static final HashMap<String, EnchProperty> ENCH_RANK = new HashMap<>();
-
-    // Enchantments are datapack registries, i.e. they're only fully present in a world
-    public static void initializeRules(final EntityJoinLevelEvent event) {
-        if (event.getEntity() != Minecraft.getInstance().player) {
-            return;
-        }
-
-        Registry<Enchantment> registry = event.getEntity().level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
-        RULE_FILE = FMLPaths.CONFIGDIR.get().resolve(FILE_NAME).toFile();
-
-        try {
-            try {
-                if (!RULE_FILE.exists() || RULE_FILE.createNewFile()) {
-                    writeDefault(registry);
-                }
-
-                RULE_TOML = new Toml().read(RULE_FILE);
-            } catch (RuntimeException exception) {
-                LOGGER.warn(FILE_NAME + " contains invalid toml, file will be re-generated", exception);
-                writeDefault(registry);
-            }
-        } catch (IOException exception) {
-            LOGGER.error("Failed to create or write " + FILE_NAME, exception);
-        }
-
-        parseRule();
-        EnchComparator.initComparator(registry);
-    }
-
-    public static void parseRule() {
-        int size, index;
-        List<Toml> tomlList = RULE_TOML.getTables(LIST_KEY);
-        size = tomlList == null ? 0 : tomlList.size();
-
-        for (index = 0; index < size; index++) {
-            Toml entry = tomlList.get(index);
-            EnchProperty prop = entry.to(EnchProperty.class);
-            prop.sequence = size - index;
-            ENCH_RANK.put(prop.name, prop);
-        }
-
-        if (ENCH_RANK.size() == index) {
-            LOGGER.info("Parsed {} enchantments successfully", index);
-        } else {
-            LOGGER.warn("Parse count mismatch - there are {} repeats", index - ENCH_RANK.size());
-        }
-    }
-
-    @SuppressWarnings("DataFlowIssue") // enchantment registry should be present
     public static void sortDefault(final ItemTooltipEvent event) {
+        //noinspection DataFlowIssue -> registry shoudl be present
         List<Object2IntMap.Entry<Holder<Enchantment>>> sorted = Utils.getSortedEnchantments(event.getItemStack(), event.getContext().registries().lookupOrThrow(Registries.ENCHANTMENT));
 
         int index;
@@ -113,7 +47,7 @@ public class EnchSortRule {
         int toRemove = index + (handleDescriptions ? sorted.size() * 2 : sorted.size());
 
         if (toRemove > tooltips.size()) {
-            LOGGER.warn("Some tooltips are missing - try using the [compatible] mode");
+            EnchSort.LOGGER.warn("Some tooltips are missing - try using the [compatible] mode");
             return;
         }
 
@@ -142,7 +76,7 @@ public class EnchSortRule {
             if (!descriptions.isEmpty() && component.getContents() instanceof TranslatableContents contents) {
                 Component description = descriptions.remove(contents.getKey());
 
-                if (descriptions != null) {
+                if (description != null) {
                     tooltips.add(index++, description);
                 }
             }
@@ -212,7 +146,7 @@ public class EnchSortRule {
         return getDescriptionKey(component) != null;
     }
 
-    private static String getDescriptionKey(final Component component) {
+    private static @Nullable String getDescriptionKey(final Component component) {
         if (component.getContents() instanceof TranslatableContents contents && contents.getKey().endsWith(".desc")) {
             return contents.getKey();
         }
@@ -226,62 +160,30 @@ public class EnchSortRule {
         return null;
     }
 
-    private static void writeDefault(final Registry<Enchantment> registry) throws IOException {
-        TomlWriter writer = new TomlWriter.Builder()
-                .indentValuesBy(0)
-                .indentTablesBy(0)
-                .build();
-
-        List<Map<String, Object>> entries = new ArrayList<>();
-
-        registry.entrySet().forEach(entry -> {
-            Map<String, Object> element = new LinkedHashMap<>();
-            element.put(EnchProperty.NAME, entry.getKey().location().toString());
-            element.put(EnchProperty.MAX_LVL, Utils.getMaxLevel(entry.getValue()));
-
-            entries.add(element);
-        });
-
-        Map<String, List<Map<String, Object>>> defaultSequence = new HashMap<>();
-        defaultSequence.put(LIST_KEY, entries);
-
-        writer.write(defaultSequence, RULE_FILE);
-    }
-
-    public static EnchProperty getPropById(String id) {
-        return ENCH_RANK.getOrDefault(id, DEFAULT_PROP);
-    }
-
     public static Component getEnchantmentTooltip(final Object2IntMap.Entry<Holder<Enchantment>> entry) {
-        Enchantment enchantment = entry.getKey().value();
-        Component description = enchantment.description();
+        Component description = Enchantment.getFullname(entry.getKey(), entry.getIntValue());
 
         if (!(description instanceof MutableComponent mutable)) {
             return description;
         }
 
-        // The description itself is immutable
-        mutable = mutable.copy();
+        int level = entry.getIntValue();
+        int maxLevel = Utils.getMaxLevel(entry.getKey());
 
-        if (Utils.isCurse(entry.getKey())) {
-            mutable.withStyle(RED);
-        } else if (ClientConfig.HIGHLIGHT_TREASURE.get() && Utils.isTreasure(entry.getKey())) {
-            mutable.withStyle(ClientConfig.TREASURE);
-        } else {
-            mutable.withStyle(GRAY);
+        if (ClientConfig.CURSE_STYLE != Style.EMPTY && Utils.isCurse(entry.getKey())) {
+            mutable.withStyle(ClientConfig.CURSE_STYLE);
+        } else if (ClientConfig.TREASURE_STYLE != Style.EMPTY && Utils.isTreasure(entry.getKey())) {
+            mutable.withStyle(ClientConfig.TREASURE_STYLE);
+        } else if (ClientConfig.MAX_LEVEL_STYLE != Style.EMPTY && level == maxLevel) {
+            mutable.withStyle(ClientConfig.MAX_LEVEL_STYLE);
         }
 
-        int level = entry.getIntValue();
-        int maxLevel = Math.max(Utils.getMaxLevel(enchantment), getPropById(entry.getKey().getRegisteredName()).getMaxLevel());
-
         if (level != 1 || maxLevel != 1) {
-            mutable.append(" ").append(Component.translatable("enchantment.level." + level));
-
             if (ClientConfig.SHOW_MAX_LEVEL.get()) {
                 Component maxLvl = Component
                         .literal("/")
                         .append(Component.translatable("enchantment.level." + maxLevel))
-                        .setStyle(ClientConfig.MAX_LEVEL);
+                        .setStyle(ClientConfig.MAX_LEVEL_INFO_STYLE);
 
                 mutable.append(maxLvl);
             }
@@ -290,37 +192,8 @@ public class EnchSortRule {
         return mutable;
     }
 
-
-    public static class EnchProperty {
-        private final String name;
-        private int sequence;
-        private final int max_lvl;
-
-        public static final String NAME = "name";
-        public static final String MAX_LVL = "max_lvl";
-
-        private EnchProperty() {
-            name = "null";
-            sequence = 0;
-            max_lvl = 0;
-        }
-
-        public int getSequence() {
-            return sequence;
-        }
-
-        public int getMaxLevel() {
-            return max_lvl;
-        }
-    }
-
     static class EnchComparator implements Comparator<Object2IntMap.Entry<Holder<Enchantment>>> {
-        private static int maxLevel;
-        private static int enchantmentCount;
         private static final EnchComparator INSTANCE = new EnchComparator();
-
-        private EnchComparator() {
-        }
 
         public static Comparator<Object2IntMap.Entry<Holder<Enchantment>>> getInstance() {
             if (ClientConfig.ASCENDING_SORT.get()) {
@@ -330,49 +203,53 @@ public class EnchSortRule {
             return INSTANCE.reversed();
         }
 
-        public static void initComparator(final Registry<Enchantment> registry) {
-            enchantmentCount = registry.size();
-
-            if (enchantmentCount == 0) {
-                LOGGER.warn("There are no enchantments in the registry");
-            }
-
-            registry.entrySet().forEach(entry -> {
-                int maxLevel = Math.max(Utils.getMaxLevel(entry.getValue()), getPropById(entry.getKey().location().toString()).getMaxLevel());
-
-                if (maxLevel > EnchComparator.maxLevel) {
-                    EnchComparator.maxLevel = maxLevel;
-                }
-            });
-
-            LOGGER.debug("Max enchantment level is {}", EnchComparator.maxLevel);
-        }
-
         @Override
         public int compare(final Object2IntMap.Entry<Holder<Enchantment>> first, final Object2IntMap.Entry<Holder<Enchantment>> second) {
-            EnchProperty firstProperty = getPropById(first.getKey().getRegisteredName());
-            EnchProperty secondProperty = getPropById(second.getKey().getRegisteredName());
+            TomlHandler.SequenceConfig firstProperty = TomlHandler.getConfig(first.getKey().getRegisteredName());
+            TomlHandler.SequenceConfig secondProperty = TomlHandler.getConfig(second.getKey().getRegisteredName());
 
-            int result = firstProperty.getSequence() - secondProperty.getSequence();
+            /*
+            1. Sort by custom user sequence
+            2. If the sequence is the same, sort using the levels (if the config is enabled)
+            3. Sort treasure and / or curse enchantment separately (depending on the configs)
+            */
 
-            if (ClientConfig.SORT_BY_LEVEL.get()) {
-                result += (first.getIntValue() - second.getIntValue()) * enchantmentCount;
+            int result = Integer.compare(firstProperty.getSequence(), secondProperty.getSequence());
+
+            if (result == 0 && ClientConfig.SORT_BY_LEVEL.get()) {
+                result = Integer.compare(first.getIntValue(), second.getIntValue());
+
+                if (result == 0) {
+                    result = Integer.compare(Utils.getMaxLevel(first.getKey()), Utils.getMaxLevel(second.getKey()));
+                }
+            }
+
+            // Curse enchantments are usually also tagged as treasure, therefor check them first
+            if (ClientConfig.INDEPENDENT_CURSE.get()) {
+                boolean isFirstCurse = Utils.isCurse(first.getKey());
+                boolean isSecondCurse = Utils.isCurse(second.getKey());
+
+                // Reverse = they start at the top
+                if (isFirstCurse && !isSecondCurse) {
+                    return ClientConfig.REVERSE_CURSE.get() ? -1 : 1;
+                }
+
+                if (!isFirstCurse && isSecondCurse) {
+                    return ClientConfig.REVERSE_CURSE.get() ? 1 : -1;
+                }
             }
 
             if (ClientConfig.INDEPENDENT_TREASURE.get()) {
-                // Ensures that treasure enchantments start at the highest or lowest position
-                int modifier = maxLevel * enchantmentCount;
+                boolean isFirstTreasure = Utils.isTreasure(first.getKey());
+                boolean isSecondTreasure = Utils.isTreasure(second.getKey());
 
-                if (ClientConfig.REVERSE_TREASURE.get()) {
-                    modifier = -modifier;
+                // Reverse = they start at the top
+                if (isFirstTreasure && !isSecondTreasure) {
+                    return ClientConfig.REVERSE_TREASURE.get() ? 1 : -1;
                 }
 
-                if (Utils.isTreasure(first.getKey())) {
-                    result -= modifier;
-                }
-
-                if (Utils.isTreasure(second.getKey())) {
-                    result += modifier;
+                if (!isFirstTreasure && isSecondTreasure) {
+                    return ClientConfig.REVERSE_TREASURE.get() ? 1 : -1;
                 }
             }
 
